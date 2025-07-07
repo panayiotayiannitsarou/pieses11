@@ -50,6 +50,9 @@ if uploaded_file:
         st.session_state["df"] = df
         st.session_state["num_classes"] = num_classes
         st.success(f"✅ Η κατανομή ολοκληρώθηκε με {num_classes} τμήματα.")
+        st.subheader("🔍 Προεπισκόπηση Μετά την Κατανομή")
+        st.dataframe(df)
+
         st.dataframe(df)
 
     # ➤ Εξαγωγή σε Excel
