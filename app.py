@@ -47,6 +47,8 @@ if uploaded_file:
 
     if st.button("📌 Τελική Κατανομή Μαθητών (μετά τα 8 Βήματα)"):
         df, num_classes = calculate_class_distribution(df)
+        st.session_state["df"] = df
+        st.session_state["num_classes"] = num_classes
         st.success(f"✅ Η κατανομή ολοκληρώθηκε με {num_classes} τμήματα.")
         st.dataframe(df)
 
