@@ -93,6 +93,16 @@ if uploaded_file:
 
             st.dataframe(summary_df)
 
+            st.subheader("🧪 Debug Ανάλυση Χαρακτηριστικών")
+            for col, (target_val, label) in categories.items():
+                if col in df.columns:
+                    st.markdown(f"**{label}**")
+                    filtered = df[df[col] == target_val]
+                    st.write(f"Πλήθος με '{target_val}' στο '{col}':", len(filtered))
+                    if "ΤΜΗΜΑ" in filtered.columns:
+                        st.write("Κατανομή σε ΤΜΗΜΑ:", filtered["ΤΜΗΜΑ"].value_counts())
+
+
 
         # ➤ Ραβδογράμματα Ανά Κατηγορία (Μόνο Ν ή Α)
         if st.button("📈 Εμφάνιση Ραβδογραμμάτων Ανά Κατηγορία"):
