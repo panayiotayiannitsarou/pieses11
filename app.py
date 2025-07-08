@@ -1,6 +1,4 @@
 
-# === Μέρος 1: Ενιαίος Πίνακας Στατιστικών (μόνο Ν/Α) ===
-
 import streamlit as st
 import pandas as pd
 import math
@@ -53,48 +51,46 @@ if uploaded_file:
         st.dataframe(df)
 
     # ➤ Εξαγωγή σε Excel
-    if "ΤΜΗΜΑ" in df.columns:
+    if "df" in st.session_state and "ΤΜΗΜΑ" in st.session_state["df"].columns:
         output = BytesIO()
-        df.to_excel(output, index=False)
+        st.session_state["df"].to_excel(output, index=False)
         st.download_button("📤 Κατεβάστε το Αποτέλεσμα σε Excel", output.getvalue(), file_name="katanomi_v0.xlsx")
 
         # ➤ Ενιαίος Πίνακας Στατιστικών
         if st.button("📊 Εμφάνιση Ενιαίου Πίνακα Στατιστικών"):
-            if "ΤΜΗΜΑ" not in df.columns or df["ΤΜΗΜΑ"].isna().all():
-                st.warning("⚠️ Δεν έχει γίνει ακόμη η κατανομή μαθητών. Πρώτα εκτελέστε την κατανομή.")
-            else:
-                st.subheader("📊 Ενιαίος Πίνακας Στατιστικών (μόνο Ν/Α)")
+            df = st.session_state["df"]
+            st.subheader("📊 Ενιαίος Πίνακας Στατιστικών (μόνο Ν/Α)")
 
-                categories = {
-                    "ΦΥΛΟ": ("Α", "Αγόρια (Α)"),
-                    "ΠΑΙΔΙ ΕΚΠΑΙΔΕΥΤΙΚΟΥ": ("Ν", "Παιδιά Εκπαιδευτικών"),
-                    "ΖΩΗΡΟΣ": ("Ν", "Ζωηροί Μαθητές"),
-                    "ΙΔΙΑΙΤΕΡΟΤΗΤΑ": ("Ν", "Μαθητές με Ιδιαιτερότητα"),
-                    "ΚΑΛΗ ΓΝΩΣΗ ΕΛΛΗΝΙΚΩΝ": ("Ν", "Καλή Γνώση Ελληνικών"),
-                    "ΙΚΑΝΟΠΟΙΗΤΙΚΗ ΜΑΘΗΣΙΑΚΗ ΙΚΑΝΟΤΗΤΑ": ("Ν", "ΙΚΑΝΟΠΟΙΗΤΙΚΗ ΜΑΘΗΣΙΑΚΗ ΙΚΑΝΟΤΗΤΑ")
-                }
+            categories = {
+                "ΦΥΛΟ": ("Α", "Αγόρια (Α)"),
+                "ΠΑΙΔΙ ΕΚΠΑΙΔΕΥΤΙΚΟΥ": ("Ν", "Παιδιά Εκπαιδευτικών"),
+                "ΖΩΗΡΟΣ": ("Ν", "Ζωηροί Μαθητές"),
+                "ΙΔΙΑΙΤΕΡΟΤΗΤΑ": ("Ν", "Μαθητές με Ιδιαιτερότητα"),
+                "ΚΑΛΗ ΓΝΩΣΗ ΕΛΛΗΝΙΚΩΝ": ("Ν", "Καλή Γνώση Ελληνικών"),
+                "ΙΚΑΝΟΠΟΙΗΤΙΚΗ ΜΑΘΗΣΙΑΚΗ ΙΚΑΝΟΤΗΤΑ": ("Ν", "ΙΚΑΝΟΠΟΙΗΤΙΚΗ ΜΑΘΗΣΙΑΚΗ ΙΚΑΝΟΤΗΤΑ")
+            }
 
-                summary_df = pd.DataFrame()
+            summary_df = pd.DataFrame()
 
-                for col, (target_val, label) in categories.items():
-                    if col in df.columns:
-                        count_series = df[df[col] == target_val].groupby("ΤΜΗΜΑ")["ΟΝΟΜΑΤΕΠΩΝΥΜΟ"].count()
-                        summary_df[label] = count_series
+            for col, (target_val, label) in categories.items():
+                if col in df.columns:
+                    count_series = df[df[col] == target_val].groupby("ΤΜΗΜΑ")["ΟΝΟΜΑΤΕΠΩΝΥΜΟ"].count()
+                    summary_df[label] = count_series
 
-                summary_df["Σύνολο Τμήματος"] = df.groupby("ΤΜΗΜΑ")["ΟΝΟΜΑΤΕΠΩΝΥΜΟ"].count()
+            summary_df["Σύνολο Τμήματος"] = df.groupby("ΤΜΗΜΑ")["ΟΝΟΜΑΤΕΠΩΝΥΜΟ"].count()
 
-                total_row = pd.DataFrame(summary_df.sum(axis=0)).T
-                total_row.index = ["Σύνολο"]
-                summary_df = pd.concat([summary_df, total_row])
-                summary_df = summary_df.fillna(0).astype(int)
+            total_row = pd.DataFrame(summary_df.sum(axis=0)).T
+            total_row.index = ["Σύνολο"]
+            summary_df = pd.concat([summary_df, total_row])
+            summary_df = summary_df.fillna(0).astype(int)
 
-                st.dataframe(summary_df)
+            st.dataframe(summary_df)
 
-                st.subheader("🧪 Debug Ανάλυση Χαρακτηριστικών")
-                for col, (target_val, label) in categories.items():
-                    if col in df.columns:
-                        st.markdown(f"**{label}**")
-                        filtered = df[df[col] == target_val]
-                        st.write(f"Πλήθος με '{target_val}' στο '{col}':", len(filtered))
-                        if "ΤΜΗΜΑ" in filtered.columns:
-                            st.write("Κατανομή σε ΤΜΗΜΑ:", filtered["ΤΜΗΜΑ"].value_counts())
+            st.subheader("🧪 Debug Ανάλυση Χαρακτηριστικών")
+            for col, (target_val, label) in categories.items():
+                if col in df.columns:
+                    st.markdown(f"**{label}**")
+                    filtered = df[df[col] == target_val]
+                    st.write(f"Πλήθος με '{target_val}' στο '{col}':", len(filtered))
+                    if "ΤΜΗΜΑ" in filtered.columns:
+                        st.write("Κατανομή σε ΤΜΗΜΑ:", filtered["ΤΜΗΜΑ"].value_counts())
