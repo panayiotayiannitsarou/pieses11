@@ -25,7 +25,6 @@ if uploaded_file:
     df = pd.read_excel(uploaded_file)
     st.success("✅ Το αρχείο ανέβηκε επιτυχώς!")
 
-    # ➤ Βήμα 0 – Ισορροπία Πληθυσμού
     def calculate_class_distribution(df):
         total_students = len(df)
         max_per_class = 25
@@ -41,7 +40,6 @@ if uploaded_file:
         df_shuffled["ΚΛΕΙΔΩΜΕΝΟΣ"] = False
         return df_shuffled, num_classes
 
-    # ➤ Εμφάνιση Πίνακα Στατιστικών Ανά Τμήμα
     def show_statistics_table(df, num_classes):
         summary = []
         for i in range(num_classes):
@@ -65,16 +63,14 @@ if uploaded_file:
         st.subheader("📊 Πίνακας Στατιστικών Ανά Τμήμα")
         st.dataframe(stats_df)
 
-        if st.button("📥 Λήψη Excel με Κατανομή και Στατιστικά"):
-            output = BytesIO()
-            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                df.to_excel(writer, sheet_name='Κατανομή', index=False)
-                stats_df.to_excel(writer, sheet_name='Στατιστικά', index=False)
-            st.download_button(
-                label="⬇️ Κατεβάστε το Αρχείο Excel",
-                data=output.getvalue(),
-                file_name="katanomi_kai_statistika.xlsx"
-            )
+        # Λήψη Excel μόνο με Στατιστικά
+        output_stats = BytesIO()
+        stats_df.to_excel(output_stats, index=False, sheet_name='Στατιστικά')
+        st.download_button(
+            label="📥 Λήψη Excel μόνο με Στατιστικά",
+            data=output_stats.getvalue(),
+            file_name="Monon_Statistika.xlsx"
+        )
 
     if st.button("📌 Τελική Κατανομή Μαθητών (μετά τα 8 Βήματα)"):
         df, num_classes = calculate_class_distribution(df)
@@ -83,6 +79,15 @@ if uploaded_file:
         st.success(f"✅ Η κατανομή ολοκληρώθηκε με {num_classes} τμήματα.")
         st.subheader("🔍 Προεπισκόπηση Μετά την Κατανομή")
         st.dataframe(df)
+
+        # Λήψη Excel μόνο με Κατανομή
+        output_katanomi = BytesIO()
+        df.to_excel(output_katanomi, index=False)
+        st.download_button(
+            label="📥 Λήψη Excel μόνο με Κατανομή",
+            data=output_katanomi.getvalue(),
+            file_name="Monon_Katanomi.xlsx"
+        )
 
     if "df" in st.session_state and "ΤΜΗΜΑ" in st.session_state["df"].columns:
         df = st.session_state["df"]
