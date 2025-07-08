@@ -17,7 +17,6 @@ if not enable_app:
     st.info("🔒 Η εφαρμογή είναι προσωρινά απενεργοποιημένη.")
     st.stop()
 
-# ➤ Τίτλος
 st.title("🎯 Ψηφιακή Κατανομή Μαθητών Α΄ Δημοτικού")
 
 # ➤ Εισαγωγή Αρχείου Excel
@@ -42,6 +41,41 @@ if uploaded_file:
         df_shuffled["ΚΛΕΙΔΩΜΕΝΟΣ"] = False
         return df_shuffled, num_classes
 
+    # ➤ Εμφάνιση Πίνακα Στατιστικών Ανά Τμήμα
+    def show_statistics_table(df, num_classes):
+        summary = []
+        for i in range(num_classes):
+            class_id = f'Τμήμα {i+1}'
+            class_df = df[df['ΤΜΗΜΑ'] == class_id]
+            total = class_df.shape[0]
+            stats = {
+                "ΤΜΗΜΑ": class_id,
+                "ΑΓΟΡΙΑ": (class_df["ΦΥΛΟ"] == "Α").sum(),
+                "ΚΟΡΙΤΣΙΑ": (class_df["ΦΥΛΟ"] == "Κ").sum(),
+                "ΠΑΙΔΙΑ_ΕΚΠΑΙΔΕΥΤΙΚΩΝ": (class_df["ΠΑΙΔΙ ΕΚΠΑΙΔΕΥΤΙΚΟΥ"] == "Ν").sum(),
+                "ΖΩΗΡΟΙ": (class_df["ΖΩΗΡΟΣ"] == "Ν").sum(),
+                "ΙΔΙΑΙΤΕΡΟΤΗΤΕΣ": (class_df["ΙΔΙΑΙΤΕΡΟΤΗΤΑ"] == "Ν").sum(),
+                "ΚΑΛΗ_ΓΝΩΣΗ_ΕΛΛΗΝΙΚΩΝ": (class_df["ΚΑΛΗ ΓΝΩΣΗ ΕΛΛΗΝΙΚΩΝ"] == "Ν").sum(),
+                "ΙΚΑΝΟΠΟΙΗΤΙΚΗ_ΜΑΘΗΣΙΑΚΗ_ΙΚΑΝΟΤΗΤΑ": (class_df["ΙΚΑΝΟΠΟΙΗΤΙΚΗ ΜΑΘΗΣΙΑΚΗ ΙΚΑΝΟΤΗΤΑ"] == "Ν").sum(),
+                "ΣΥΝΟΛΟ": total
+            }
+            summary.append(stats)
+
+        stats_df = pd.DataFrame(summary)
+        st.subheader("📊 Πίνακας Στατιστικών Ανά Τμήμα")
+        st.dataframe(stats_df)
+
+        if st.button("📥 Λήψη Excel με Κατανομή και Στατιστικά"):
+            output = BytesIO()
+            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                df.to_excel(writer, sheet_name='Κατανομή', index=False)
+                stats_df.to_excel(writer, sheet_name='Στατιστικά', index=False)
+            st.download_button(
+                label="⬇️ Κατεβάστε το Αρχείο Excel",
+                data=output.getvalue(),
+                file_name="katanomi_kai_statistika.xlsx"
+            )
+
     if st.button("📌 Τελική Κατανομή Μαθητών (μετά τα 8 Βήματα)"):
         df, num_classes = calculate_class_distribution(df)
         st.session_state["df"] = df
@@ -50,47 +84,7 @@ if uploaded_file:
         st.subheader("🔍 Προεπισκόπηση Μετά την Κατανομή")
         st.dataframe(df)
 
-    # ➤ Εξαγωγή σε Excel
     if "df" in st.session_state and "ΤΜΗΜΑ" in st.session_state["df"].columns:
-        output = BytesIO()
-        st.session_state["df"].to_excel(output, index=False)
-        st.download_button("📤 Κατεβάστε το Αποτέλεσμα σε Excel", output.getvalue(), file_name="katanomi_v0.xlsx")
-
-        # ➤ Ενιαίος Πίνακας Στατιστικών
-        if st.button("📊 Εμφάνιση Ενιαίου Πίνακα Στατιστικών"):
-            df = st.session_state["df"]
-            st.subheader("📊 Ενιαίος Πίνακας Στατιστικών (μόνο Ν/Α)")
-
-            categories = {
-                "ΦΥΛΟ": ("Α", "Αγόρια (Α)"),
-                "ΠΑΙΔΙ ΕΚΠΑΙΔΕΥΤΙΚΟΥ": ("Ν", "Παιδιά Εκπαιδευτικών"),
-                "ΖΩΗΡΟΣ": ("Ν", "Ζωηροί Μαθητές"),
-                "ΙΔΙΑΙΤΕΡΟΤΗΤΑ": ("Ν", "Μαθητές με Ιδιαιτερότητα"),
-                "ΚΑΛΗ ΓΝΩΣΗ ΕΛΛΗΝΙΚΩΝ": ("Ν", "Καλή Γνώση Ελληνικών"),
-                "ΙΚΑΝΟΠΟΙΗΤΙΚΗ ΜΑΘΗΣΙΑΚΗ ΙΚΑΝΟΤΗΤΑ": ("Ν", "ΙΚΑΝΟΠΟΙΗΤΙΚΗ ΜΑΘΗΣΙΑΚΗ ΙΚΑΝΟΤΗΤΑ")
-            }
-
-            summary_df = pd.DataFrame()
-
-            for col, (target_val, label) in categories.items():
-                if col in df.columns:
-                    count_series = df[df[col] == target_val].groupby("ΤΜΗΜΑ")["ΟΝΟΜΑΤΕΠΩΝΥΜΟ"].count()
-                    summary_df[label] = count_series
-
-            summary_df["Σύνολο Τμήματος"] = df.groupby("ΤΜΗΜΑ")["ΟΝΟΜΑΤΕΠΩΝΥΜΟ"].count()
-
-            total_row = pd.DataFrame(summary_df.sum(axis=0)).T
-            total_row.index = ["Σύνολο"]
-            summary_df = pd.concat([summary_df, total_row])
-            summary_df = summary_df.fillna(0).astype(int)
-
-            st.dataframe(summary_df)
-
-            st.subheader("🧪 Debug Ανάλυση Χαρακτηριστικών")
-            for col, (target_val, label) in categories.items():
-                if col in df.columns:
-                    st.markdown(f"**{label}**")
-                    filtered = df[df[col] == target_val]
-                    st.write(f"Πλήθος με '{target_val}' στο '{col}':", len(filtered))
-                    if "ΤΜΗΜΑ" in filtered.columns:
-                        st.write("Κατανομή σε ΤΜΗΜΑ:", filtered["ΤΜΗΜΑ"].value_counts())
+        df = st.session_state["df"]
+        num_classes = st.session_state["num_classes"]
+        show_statistics_table(df, num_classes)
