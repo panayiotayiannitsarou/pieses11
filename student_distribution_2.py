@@ -64,17 +64,33 @@ def assign_special_needs_students(df, class_assignments, num_classes):
         return b in get_friends(a) and a in get_friends(b)
 
     # --- Υποβήμα 1: Ένας μαθητής με ιδιαιτερότητα ανά τμήμα ---
-    available_students = special_needs[~special_needs['ΟΝΟΜΑΤΕΠΩΝΥΜΟ'].isin(placed)]
+available_students = special_needs[~special_needs['ΟΝΟΜΑΤΕΠΩΝΥΜΟ'].isin(placed)].copy()
+
+# Αν οι μαθητές με ιδιαιτερότητα ≤ αριθμός τμημάτων, βάλε αυστηρά 1 ανά τμήμα
+if len(available_students) <= num_classes:
+    used_classes = set()
+    for _, row in available_students.iterrows():
+        name = row['ΟΝΟΜΑΤΕΠΩΝΥΜΟ']
+        for class_id in range(num_classes):
+            if class_id in used_classes:
+                continue
+            if not has_conflict(name, class_id):
+                class_counts[class_id].append(name)
+                placed.add(name)
+                used_classes.add(class_id)
+                break
+else:
+    # Κανονικά: 1 ανά τμήμα αν γίνεται
     for class_id in range(num_classes):
         for _, row in available_students.iterrows():
             name = row['ΟΝΟΜΑΤΕΠΩΝΥΜΟ']
-            φύλο = row['ΦΥΛΟ']
             if name in placed:
                 continue
             if not has_conflict(name, class_id):
                 class_counts[class_id].append(name)
                 placed.add(name)
                 break
+
 
     # --- Υποβήμα 2: Τοποθέτηση επιπλέον παιδιών με προτεραιότητα λιγότερους ζωηρούς και ισορροπία φύλου ---
     remaining = special_needs[~special_needs['ΟΝΟΜΑΤΕΠΩΝΥΜΟ'].isin(placed)]
